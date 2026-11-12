@@ -2,6 +2,9 @@
 window.PAXTON_CONFIG = {
   "workerUrl": "https://paxton-sucks-search.damonrosshutchins.workers.dev",
   "workerUrls": [
-    "https://pxs-search-backup.damonrosshutchins.workers.dev"
+    "https://pxs-search-backup.damonrosshutchins.workers.dev",
+    "https://pxs-search-backup-2.damonrosshutchins.workers.dev",
+    "https://pxs-search-backup-3.damonrosshutchins.workers.dev",
+    "https://pxs-search-backup-4.damonrosshutchins.workers.dev"
   ]
 };

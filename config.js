@@ -5,6 +5,9 @@ window.PAXTON_CONFIG = {
     "https://pxs-search-backup.damonrosshutchins.workers.dev",
     "https://pxs-search-backup-2.damonrosshutchins.workers.dev",
     "https://pxs-search-backup-3.damonrosshutchins.workers.dev",
-    "https://pxs-search-backup-4.damonrosshutchins.workers.dev"
+    "https://pxs-search-backup-4.damonrosshutchins.workers.dev",
+    "https://pxs-api-01.pages.dev",
+    "https://pxs-api-02.pages.dev",
+    "https://pxs-api-03.pages.dev"
   ]
 };

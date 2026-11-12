@@ -1,0 +1,8 @@
+{
+  "generated": "2026-11-12T04:12:02.039Z",
+  "versions": {
+    "scramjet": "1.1.0",
+    "bare-mux": "2.1.9",
+    "bare-as-module3": "2.2.5"
+  }
+}

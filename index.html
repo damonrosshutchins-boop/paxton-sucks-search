@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Paxton Sucks Search</title>
+    <meta
+      name="description"
+      content="A search proxy: static frontend on surge.sh, Scramjet rewriting in your browser, every query and page fetched through a Cloudflare Worker."
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#070809" />
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23c9f75b'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='15' font-weight='700' text-anchor='middle' fill='%23070809'%3EPS%3C/text%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="brand" href="/" data-home>
+        <span class="brand-mark" aria-hidden="true">PS</span>
+        <span class="brand-name">Paxton Sucks <span>Search</span></span>
+      </a>
+      <div class="topbar-right">
+        <span class="backend" id="backend-pill" data-state="checking">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="backend-label">checking Cloudflare…</span>
+        </span>
+      </div>
+    </header>
+
+    <div class="banner" id="backend-banner" hidden>
+      <strong>Backend not reachable.</strong>
+      <span>Start the Worker (<code>npm run dev:worker</code>) or set <code>PAXTON_WORKER_URL</code> at build time.</span>
+    </div>
+
+    <main>
+      <section class="view hero" id="view-home">
+        <p class="eyebrow">
+          <span>surge.sh</span> frontend <i aria-hidden="true">→</i>
+          <span>cloudflare workers</span> transport <i aria-hidden="true">→</i>
+          <span>scramjet</span> engine
+        </p>
+
+        <h1>Paxton sucks.<br /><em>Search doesn’t.</em></h1>
+
+        <p class="lede">
+          Type a query or paste a link. Pages are rewritten in your browser by Scramjet, and every request leaves
+          through a Cloudflare Worker — not straight from your IP.
+        </p>
+
+        <form class="search" id="search-form" role="search" autocomplete="off">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+            <path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <input
+            id="q"
+            name="q"
+            type="search"
+            placeholder="Search the web, or paste a URL"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            enterkeyhint="search"
+            aria-label="Search the web, or paste a URL"
+          />
+          <button type="submit">Search</button>
+        </form>
+
+        <div class="chips" id="chips" aria-label="Suggested searches">
+          <button type="button" data-query="cloudflare workers">cloudflare workers</button>
+          <button type="button" data-query="scramjet web proxy">scramjet</button>
+          <button type="button" data-query="tomphttp bare server specification">bare server spec</button>
+          <button type="button" data-query="surge.sh static hosting">surge.sh</button>
+        </div>
+
+        <ul class="facts">
+          <li><b>no accounts</b><span>open to anyone</span></li>
+          <li><b>no analytics</b><span>no beacons, no pixels</span></li>
+          <li><b>no server of ours</b><span>surge + workers only</span></li>
+        </ul>
+
+        <section class="linkgen" aria-labelledby="linkgen-title">
+          <div class="linkgen-head">
+            <h2 id="linkgen-title">link gen</h2>
+            <p>Backup addresses of this same site. Grab one if a link stops working.</p>
+          </div>
+          <div class="linkgen-row">
+            <button type="button" class="linkgen-go" id="linkgen-go">new link</button>
+            <span class="linkgen-out" id="linkgen-out" aria-live="polite">press “new link”</span>
+            <button type="button" class="linkgen-copy" id="linkgen-copy" hidden>copy</button>
+          </div>
+        </section>
+
+        <section class="linkgen" aria-labelledby="proof-title">
+          <div class="linkgen-head">
+            <h2 id="proof-title">proof</h2>
+            <p>Your address next to the one a site actually sees.</p>
+          </div>
+          <div class="linkgen-row">
+            <button type="button" class="linkgen-go" id="proof-go">check</button>
+            <span class="linkgen-out proof-out" id="proof-out" aria-live="polite">press “check”</span>
+          </div>
+        </section>
+      </section>
+
+      <section class="view results" id="view-results" hidden>
+        <form class="search search--compact" id="results-form" role="search" autocomplete="off">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+            <path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <input
+            id="q-compact"
+            name="q"
+            type="search"
+            placeholder="Search again"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            enterkeyhint="search"
+            aria-label="Search again"
+          />
+          <button type="submit">Search</button>
+        </form>
+
+        <div class="results-head">
+          <p class="meta" id="results-meta" role="status" aria-live="polite">Ready.</p>
+        </div>
+
+        <div class="results-list" id="results-list"></div>
+      </section>
+
+      <section class="view proxy" id="view-proxy" hidden>
+        <div class="toolbar">
+          <div class="toolbar-group">
+            <button type="button" class="icon" id="btn-back" title="Back" aria-label="Back">←</button>
+            <button type="button" class="icon" id="btn-forward" title="Forward" aria-label="Forward">→</button>
+            <button type="button" class="icon" id="btn-reload" title="Reload" aria-label="Reload">⟳</button>
+          </div>
+
+          <div class="address" id="address" title="Proxied address">about:blank</div>
+
+          <div class="toolbar-group">
+            <button type="button" class="icon icon--wide" id="btn-copy" title="Copy the real URL">copy</button>
+            <a class="raw-link" id="btn-raw" href="#" target="_blank" rel="noopener noreferrer nofollow">direct ↗</a>
+            <button type="button" class="icon icon--wide" id="btn-exit" title="Close the proxy (Esc)">exit</button>
+          </div>
+        </div>
+
+        <div class="frame-slot" id="frame-slot">
+          <div class="frame-loading" id="frame-loading"><span class="dot"></span>starting scramjet…</div>
+        </div>
+
+        <div class="proxy-error" id="proxy-error" hidden></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>
+        Frontend on <a href="https://surge.sh" target="_blank" rel="noopener">surge.sh</a> · transport on
+        <a href="https://workers.cloudflare.com" target="_blank" rel="noopener">Cloudflare Workers</a> · rewriting by
+        <a href="https://github.com/MercuryWorkshop/scramjet" target="_blank" rel="noopener">Scramjet</a>
+      </p>
+      <p class="fine">An educational proxy demo. What you route through it is your business, and your responsibility.</p>
+    </footer>
+
+    <noscript>
+      <p class="banner">Paxton Sucks Search needs JavaScript — the proxy engine runs in your browser.</p>
+    </noscript>
+
+    <script src="config.js"></script>
+    <script src="mirrors.js"></script>
+    <script src="vendor/scramjet/scramjet.all.js"></script>
+    <script src="vendor/baremux/index.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

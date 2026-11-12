@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>404 — Paxton Sucks Search</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="hero">
+      <p class="eyebrow"><span>404</span> nothing here</p>
+      <h1>Paxton still sucks.<br /><em>But this page is gone.</em></h1>
+      <p class="lede">The file you asked for does not exist. The search box does.</p>
+      <p><a class="ghost" href="./">Back to the search</a></p>
+    </main>
+
+    <script>
+      // GitHub Pages serves this file for unknown paths. A proxy navigation
+      // that landed here means the service worker was not in control yet, so
+      // ask the parent frame to retry instead of showing a dead end.
+      (function () {
+        var base = new URL(".", location.href).pathname;
+        if (location.pathname.indexOf(base + "p/") !== 0) return;
+        if (window.parent === window) return;
+        try {
+          window.parent.postMessage({ type: "paxton:proxy-miss" }, location.origin);
+        } catch (error) {
+          /* cross-origin parent: nothing useful to do */
+        }
+      })();
+    </script>
+  </body>
+</html>

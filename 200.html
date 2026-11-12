@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Starting the proxy — Paxton Sucks Search</title>
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="styles.css" />
+    <noscript><meta http-equiv="refresh" content="0; url=./" /></noscript>
+  </head>
+  <body>
+    <main class="hero">
+      <p class="eyebrow"><span>surge.sh</span> fallback</p>
+      <h1>Proxy route.<br /><em>Starting up.</em></h1>
+      <p class="lede">
+        This address only works while Scramjet's service worker is running. If it stays here, close the proxy and open
+        the page again.
+      </p>
+      <p><a class="ghost" href="./">Back to Paxton Sucks Search</a></p>
+    </main>
+
+    <script>
+      // Surge serves this file for any path that is not a real asset. A proxy
+      // navigation should never reach it: if one does, the service worker was
+      // not in control yet. Tell the parent frame to retry rather than letting
+      // the iframe wander off to the home page.
+      (function () {
+        var base = new URL(".", location.href).pathname;
+        var isProxyRoute = location.pathname.indexOf(base + "p/") === 0;
+
+        if (!isProxyRoute) {
+          location.replace(base);
+          return;
+        }
+
+        if (window.parent !== window) {
+          try {
+            window.parent.postMessage({ type: "paxton:proxy-miss" }, location.origin);
+          } catch (error) {
+            /* cross-origin parent: nothing useful to do */
+          }
+          return;
+        }
+
+        location.replace(base);
+      })();
+    </script>
+  </body>
+</html>

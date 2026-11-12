@@ -12,6 +12,7 @@ window.PAXTON_MIRRORS = [
   "damonrosshutchins-boop.github.io/pxs-mus4nzs",
   "damonrosshutchins-boop.github.io/pxs-muvu8tu",
   "paxton-sucks-search.pages.dev",
+  "paxtonreallysucks.b-cdn.net",
   "pxs-044pp9.surge.sh",
   "pxs-0nzy63.surge.sh",
   "pxs-0xj6i5.surge.sh",

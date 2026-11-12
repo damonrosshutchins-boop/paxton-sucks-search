@@ -116,10 +116,10 @@ function bindEvents() {
   els.proofGo.addEventListener("click", checkEgress);
 
   els.linkgenCopy.addEventListener("click", async () => {
-    const host = els.linkgenOut.dataset.host;
-    if (!host) return;
+    const url = els.linkgenOut.dataset.url;
+    if (!url) return;
     try {
-      await navigator.clipboard.writeText(`https://${host}/`);
+      await navigator.clipboard.writeText(url);
       flash(els.linkgenCopy, "copied");
     } catch {
       flash(els.linkgenCopy, "nope");
@@ -168,27 +168,30 @@ function bindEvents() {
  * ------------------------------------------------------------------ */
 
 function generateMirrorLink() {
-  const candidates = MIRRORS.filter((host) => host !== window.location.host);
+  // Entries are host[:path]; skip whichever one we are already on.
+  const here = (entry) => entry === window.location.host || entry.startsWith(`${window.location.host}/`);
+  const candidates = MIRRORS.filter((entry) => !here(entry));
 
   if (candidates.length === 0) {
     els.linkgenOut.textContent = "no backups published yet — run: npm run mirrors -- boost 3";
     els.linkgenCopy.hidden = true;
-    delete els.linkgenOut.dataset.host;
+    delete els.linkgenOut.dataset.url;
     return;
   }
 
   // Avoid handing out the same mirror twice in a row when there is a choice.
-  const pool = candidates.length > 1 ? candidates.filter((host) => host !== lastMirror) : candidates;
+  const pool = candidates.length > 1 ? candidates.filter((entry) => entry !== lastMirror) : candidates;
   const host = pool[Math.floor(Math.random() * pool.length)];
   lastMirror = host;
 
+  const url = `https://${host}`.replace(/\/+$/, "/");
   const link = document.createElement("a");
-  link.href = `https://${host}/`;
+  link.href = url;
   link.target = "_blank";
   link.rel = "noopener";
-  link.textContent = `https://${host}/`;
+  link.textContent = url;
 
-  els.linkgenOut.dataset.host = host;
+  els.linkgenOut.dataset.url = url;
   els.linkgenOut.replaceChildren(link);
   els.linkgenCopy.hidden = false;
 }

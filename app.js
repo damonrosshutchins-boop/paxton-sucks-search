@@ -12,9 +12,16 @@
 
 const CONFIG = window.PAXTON_CONFIG || {};
 const MIRRORS = Array.isArray(window.PAXTON_MIRRORS) ? window.PAXTON_MIRRORS.filter(Boolean) : [];
-const WORKER_BASE = String(CONFIG.workerUrl || "").replace(/\/+$/, "");
+// The primary Worker followed by any backups. If one is unreachable or answering
+// 5xx (blocked, renamed, over quota), the app moves to the next for both search
+// and the Bare transport that Scramjet proxies through.
+const WORKERS = [CONFIG.workerUrl, ...(Array.isArray(CONFIG.workerUrls) ? CONFIG.workerUrls : [])]
+  .filter((url) => typeof url === "string" && url.trim())
+  .map((url) => url.trim().replace(/\/+$/, ""))
+  .filter((url, index, list) => list.indexOf(url) === index);
+let WORKER_BASE = WORKERS[0] || "";
 const endpoint = (path) => `${WORKER_BASE}${path}`;
-const BARE_ORIGIN = endpoint("/bare/");
+let BARE_ORIGIN = `${WORKER_BASE}/bare/`;
 // The app loads its assets next to the page rather than from the origin root,
 // so one build works at "/" (surge, Cloudflare Pages) and under a subpath such
 // as GitHub Pages' /<repo>/. Everything below derives from these two.
@@ -69,9 +76,67 @@ const PROXY_RETRY_DELAYS = [250, 700, 1500, 2500];
  * ------------------------------------------------------------------ */
 
 bindEvents();
-pingBackend();
-handleDeepLink();
+bootBackend();
 els.homeInput.focus({ preventScroll: true });
+
+async function bootBackend() {
+  // Resolve the Worker before anything talks to it, so a deep link never starts
+  // the proxy against a backend that is already known to be down.
+  await chooseWorker();
+  pingBackend();
+  handleDeepLink();
+}
+
+/** Settle on the first Worker that answers a health check, in configured order. */
+async function chooseWorker() {
+  if (WORKERS.length < 2) return WORKER_BASE;
+
+  for (const base of WORKERS) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      const response = await fetch(`${base}/api/health`, { cache: "no-store", signal: controller.signal });
+      clearTimeout(timer);
+      if (!response.ok) continue;
+      switchWorker(base);
+      return base;
+    } catch {
+      /* try the next Worker */
+    }
+  }
+
+  return WORKER_BASE;
+}
+
+function switchWorker(base) {
+  if (base === WORKER_BASE) return;
+  WORKER_BASE = base;
+  BARE_ORIGIN = `${base}/bare/`;
+}
+
+/**
+ * fetch() against the Worker, failing over to the backups on network errors and
+ * 5xx. 4xx is kept as-is: 429 is a deliberate rate-limit answer, not a dead host.
+ */
+async function workerFetch(path, init) {
+  const order = [WORKER_BASE, ...WORKERS.filter((base) => base !== WORKER_BASE)];
+  let lastError = null;
+
+  for (const base of order) {
+    try {
+      const response = await fetch(`${base}${path}`, init);
+      if (response.ok || response.status < 500) {
+        switchWorker(base);
+        return response;
+      }
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error("No Worker answered.");
+}
 
 function bindEvents() {
   els.homeForm.addEventListener("submit", (event) => {
